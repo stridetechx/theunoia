@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,11 @@ const PostProjectPage = () => {
   const [budget, setBudget] = useState("");
   const [biddingDeadline, setBiddingDeadline] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const location = useLocation();
+  const communityData = location.state as { college_id?: string, is_community?: boolean } | null;
+  const isCommunityTask = communityData?.is_community || false;
+  const collegeId = communityData?.college_id || null;
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories = getCategoryList();
@@ -64,11 +69,11 @@ const PostProjectPage = () => {
   const handlePublish = async () => {
     // Validate required fields
     if (!title.trim()) {
-      toast.error("Please enter a project title");
+      toast.error(isCommunityTask ? "Please enter a task title" : "Please enter a project title");
       return;
     }
     if (!description.trim()) {
-      toast.error("Please enter a project description");
+      toast.error(isCommunityTask ? "Please enter a task description" : "Please enter a project description");
       return;
     }
     if (!primaryCategory) {
@@ -76,7 +81,7 @@ const PostProjectPage = () => {
       return;
     }
     if (!user?.id) {
-      toast.error("You must be logged in to post a project");
+      toast.error(isCommunityTask ? "You must be logged in to post a task" : "You must be logged in to post a project");
       return;
     }
 
@@ -94,9 +99,10 @@ const PostProjectPage = () => {
         skills_required: skills.length > 0 ? skills : null,
         budget: budget ? parseFloat(budget) : null,
         bidding_deadline: biddingDeadline ? new Date(biddingDeadline).toISOString() : null,
-        project_type: 'client_project',
+        project_type: isCommunityTask ? 'community_task' : 'client_project',
         status: 'open',
-        is_community_task: false,
+        is_community_task: isCommunityTask,
+        community_college_id: collegeId,
       };
 
       const { error } = await supabase
@@ -105,15 +111,15 @@ const PostProjectPage = () => {
 
       if (error) {
         console.error("Error posting project:", error);
-        toast.error(error.message || "Failed to post project");
+        toast.error(error.message || (isCommunityTask ? "Failed to post task" : "Failed to post project"));
         return;
       }
 
-      toast.success("Project posted successfully!");
-      navigate("/projects");
+      toast.success(isCommunityTask ? "Task posted successfully!" : "Project posted successfully!");
+      navigate(isCommunityTask ? "/community" : "/projects");
     } catch (error) {
       console.error("Error posting project:", error);
-      toast.error("An error occurred while posting your project");
+      toast.error(isCommunityTask ? "An error occurred while posting your task" : "An error occurred while posting your project");
     } finally {
       setIsSubmitting(false);
     }
@@ -125,10 +131,12 @@ const PostProjectPage = () => {
         <div className="flex flex-col max-w-[700px] w-full gap-5">
           <div className="flex flex-col gap-1 px-1">
             <h1 className="text-2xl font-black leading-tight tracking-[-0.02em] font-display text-[#121118] dark:text-white">
-              Post Your Project
+              {isCommunityTask ? "Post a Community Task" : "Post Your Project"}
             </h1>
             <p className="text-[#68608a] dark:text-[#a09bbd] text-sm font-normal leading-normal">
-              Share your brief and get matched with vetted talent.
+              {isCommunityTask 
+                ? "Share your task requirements and get matched with verified talent on your campus." 
+                : "Share your brief and get matched with vetted talent."}
             </p>
           </div>
 
@@ -138,13 +146,13 @@ const PostProjectPage = () => {
             <div className="flex items-center gap-2 mb-4">
               <FileText className="w-5 h-5 text-primary" />
               <h2 className="text-lg font-bold leading-tight tracking-[-0.015em] text-[#121118] dark:text-white">
-                Project Details
+                {isCommunityTask ? "Task Details" : "Project Details"}
               </h2>
             </div>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label className="text-[#121118] dark:text-white text-sm font-medium">
-                  Project Title
+                  {isCommunityTask ? "Task Title" : "Project Title"}
                 </Label>
                 <Input
                   value={title}
@@ -160,7 +168,7 @@ const PostProjectPage = () => {
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe the goals, deliverables, and any specific requirements for this project..."
+                  placeholder={isCommunityTask ? "Describe the goals, deliverables, and any specific requirements for this task..." : "Describe the goals, deliverables, and any specific requirements for this project..."}
                   className="rounded-lg border-[#dddbe6] min-h-[120px] p-3 text-sm leading-relaxed focus:ring-2 focus:ring-primary focus:border-primary resize-y"
                 />
                 <p className="text-[#68608a] text-[11px] pt-0.5">
@@ -263,7 +271,7 @@ const PostProjectPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label className="text-[#121118] dark:text-white text-sm font-medium">
-                  Project Budget (₹)
+                  {isCommunityTask ? "Task Budget (₹)" : "Project Budget (₹)"}
                 </Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#68608a] text-sm">₹</span>
@@ -277,7 +285,7 @@ const PostProjectPage = () => {
                   />
                 </div>
                 <p className="text-[#68608a] text-[11px]">
-                  Enter your estimated budget for this project
+                  {isCommunityTask ? "Enter your estimated budget for this task" : "Enter your estimated budget for this project"}
                 </p>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -342,7 +350,7 @@ const PostProjectPage = () => {
             <div className="flex flex-col gap-0.5">
               <h3 className="text-lg font-black text-primary">Ready to launch?</h3>
               <p className="text-[#68608a] dark:text-[#a09bbd] text-xs">
-                Your project will be visible to vetted experts immediately after publishing.
+                {isCommunityTask ? "Your task will be visible to students in your community immediately after publishing." : "Your project will be visible to vetted experts immediately after publishing."}
               </p>
             </div>
             <div className="flex items-center gap-3 w-full md:w-auto flex-shrink-0">
@@ -365,7 +373,7 @@ const PostProjectPage = () => {
                     Posting...
                   </>
                 ) : (
-                  "Post Project"
+                  isCommunityTask ? "Post Task" : "Post Project"
                 )}
               </Button>
             </div>

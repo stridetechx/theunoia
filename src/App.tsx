@@ -230,6 +230,9 @@ const App = () => {
                     <Route path="/calendar" element={<CalendarPage />} />
 
 
+                    <Route path="/community" element={<RoleBasedRoute pageType="community" />} />
+
+
                     <Route path="/buy-credits" element={<BuyCreditsPage />} />
 
 

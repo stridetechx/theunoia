@@ -829,7 +829,16 @@ const DashboardPage = () => {
               <span className="text-[11px] font-bold text-black">Deliverables</span>
             </Card>
             <Card 
-              className="bg-primary/55 p-3 rounded-xl border border-primary/30 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer flex flex-col items-center text-center gap-2"
+              className="bg-accent/55 p-3.5 rounded-xl border border-accent-foreground/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer flex flex-col items-center text-center gap-2.5"
+              onClick={() => navigate('/community')}
+            >
+              <div className="size-9 rounded-full bg-accent-foreground/15 text-black flex items-center justify-center">
+                <Users className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-bold text-black">Community</span>
+            </Card>
+            <Card 
+              className="bg-primary/55 p-3.5 rounded-xl border border-primary/30 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer flex flex-col items-center text-center gap-2.5"
               onClick={() => navigate('/projects')}
             >
               <div className="size-9 rounded-full bg-primary/30 text-black flex items-center justify-center">
@@ -838,7 +847,7 @@ const DashboardPage = () => {
               <span className="text-[11px] font-bold text-black">Contracts</span>
             </Card>
             <Card 
-              className="bg-secondary/55 p-3 rounded-xl border border-secondary-foreground/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer flex flex-col items-center text-center gap-2"
+              className="bg-secondary/55 p-3.5 rounded-xl border border-secondary-foreground/20 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer flex flex-col items-center text-center gap-2.5"
               onClick={() => navigate('/buy-credits')}
             >
               <div className="size-9 rounded-full bg-secondary-foreground/15 text-black flex items-center justify-center">
