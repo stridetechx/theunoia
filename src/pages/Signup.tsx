@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileText } from 'lucide-react';
 import { AgreementDialog } from '@/components/AgreementDialog';
+import { lovable } from '@/integrations/lovable';
 
 const signupSchema = z.object({
   firstName: z.string().trim().min(2, 'First name must be at least 2 characters').max(50),
