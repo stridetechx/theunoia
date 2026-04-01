@@ -14,6 +14,16 @@ interface SendCodeRequest {
   email: string;
 }
 
+const isLikelyInstitutionalEmail = (email: string) => {
+  const lower = email.toLowerCase();
+  return (
+    lower.endsWith(".edu") ||
+    lower.includes(".edu.") ||
+    lower.includes(".ac.") ||
+    lower.endsWith(".ac.in")
+  );
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -31,14 +41,25 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Create Supabase client with user's auth
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseUrl =
+      Deno.env.get("SUPABASE_URL") ?? Deno.env.get("VITE_SUPABASE_URL");
+    const supabaseAnonKey =
+      Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("VITE_SUPABASE_ANON_KEY");
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return new Response(
+        JSON.stringify({ error: "Supabase env vars missing in Edge Function secrets" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
     // Get user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const token = authHeader.replace("Bearer ", "").trim();
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
       console.error("User error:", userError);
       return new Response(
@@ -57,13 +78,38 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Validate educational email domain
     const emailLower = email.toLowerCase().trim();
-    const isEduEmail = emailLower.includes(".edu") || emailLower.includes(".ac.");
-    if (!isEduEmail) {
+    if (!isLikelyInstitutionalEmail(emailLower)) {
       return new Response(
-        JSON.stringify({ error: "Only educational emails (.edu or .ac domain) are allowed" }),
+        JSON.stringify({ error: "Use your institutional email (.edu / .ac domain)." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Enforce 60-second cooldown per user+email
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+    const { data: recentSend, error: recentSendError } = await supabase
+      .from("email_verification_codes")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("email", emailLower)
+      .gte("created_at", oneMinuteAgo)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentSendError) {
+      console.error("Cooldown check error:", recentSendError);
+      return new Response(
+        JSON.stringify({ error: "Failed to process verification request" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (recentSend) {
+      return new Response(
+        JSON.stringify({ error: "Please wait 60 seconds before requesting another code." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -95,6 +141,23 @@ const handler = async (req: Request): Promise<Response> => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
 
+    // Invalidate previous active codes to ensure latest-code-only verification
+    const { error: invalidateError } = await supabase
+      .from("email_verification_codes")
+      .update({ invalidated_at: new Date().toISOString() })
+      .eq("user_id", user.id)
+      .eq("email", emailLower)
+      .is("verified_at", null)
+      .is("invalidated_at", null);
+
+    if (invalidateError) {
+      console.error("Invalidate error:", invalidateError);
+      return new Response(
+        JSON.stringify({ error: "Failed to rotate verification code" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Store code in database
     const { error: insertError } = await supabase
       .from("email_verification_codes")
@@ -103,6 +166,8 @@ const handler = async (req: Request): Promise<Response> => {
         email: emailLower,
         code,
         expires_at: expiresAt,
+        attempt_count: 0,
+        invalidated_at: null,
       });
 
     if (insertError) {

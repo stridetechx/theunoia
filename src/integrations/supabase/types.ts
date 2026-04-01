@@ -231,29 +231,35 @@ export type Database = {
       }
       email_verification_codes: {
         Row: {
+          attempt_count: number | null
           code: string
           created_at: string | null
           email: string
           expires_at: string
           id: string
+          invalidated_at: string | null
           user_id: string
           verified_at: string | null
         }
         Insert: {
+          attempt_count?: number | null
           code: string
           created_at?: string | null
           email: string
           expires_at: string
           id?: string
+          invalidated_at?: string | null
           user_id: string
           verified_at?: string | null
         }
         Update: {
+          attempt_count?: number | null
           code?: string
           created_at?: string | null
           email?: string
           expires_at?: string
           id?: string
+          invalidated_at?: string | null
           user_id?: string
           verified_at?: string | null
         }
