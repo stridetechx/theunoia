@@ -34,7 +34,7 @@ const Signup = () => {
   const [termsDialogOpen, setTermsDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signUp, user } = useAuth();
+  const { signUp, signInWithGoogle, user } = useAuth();
 
   const slides = ['/images/auth-slide-1.png', '/images/auth-slide-2.png', '/images/auth-slide-3.png'];
 
