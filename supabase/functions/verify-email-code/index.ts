@@ -12,8 +12,6 @@ interface VerifyCodeRequest {
   code: string;
 }
 
-const MAX_ATTEMPTS = 5;
-
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -31,25 +29,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Create Supabase client with user's auth
-    const supabaseUrl =
-      Deno.env.get("SUPABASE_URL") ?? Deno.env.get("VITE_SUPABASE_URL");
-    const supabaseAnonKey =
-      Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("VITE_SUPABASE_ANON_KEY");
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return new Response(
-        JSON.stringify({ error: "Supabase env vars missing in Edge Function secrets" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
     // Get user
-    const token = authHeader.replace("Bearer ", "").trim();
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       console.error("User error:", userError);
       return new Response(
@@ -71,14 +58,14 @@ const handler = async (req: Request): Promise<Response> => {
     const emailLower = email.toLowerCase().trim();
     const codeTrimmed = code.trim();
 
-    // Look up the latest active code for this user/email
+    // Look up the code
     const { data: verificationCode, error: lookupError } = await supabase
       .from("email_verification_codes")
       .select("*")
       .eq("user_id", user.id)
       .eq("email", emailLower)
+      .eq("code", codeTrimmed)
       .is("verified_at", null)
-      .is("invalidated_at", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -93,7 +80,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!verificationCode) {
       return new Response(
-        JSON.stringify({ error: "No active verification code found. Please request a new code." }),
+        JSON.stringify({ error: "Invalid verification code" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -106,36 +93,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Validate code and count attempts
-    if (verificationCode.code !== codeTrimmed) {
-      const nextAttempt = (verificationCode.attempt_count || 0) + 1;
-      const shouldInvalidate = nextAttempt >= MAX_ATTEMPTS;
-      const { error: attemptError } = await supabase
-        .from("email_verification_codes")
-        .update({
-          attempt_count: nextAttempt,
-          invalidated_at: shouldInvalidate ? new Date().toISOString() : null,
-        })
-        .eq("id", verificationCode.id);
-
-      if (attemptError) {
-        console.error("Attempt update error:", attemptError);
-      }
-
-      return new Response(
-        JSON.stringify({
-          error: shouldInvalidate
-            ? "Too many failed attempts. Please request a new code."
-            : "Invalid verification code",
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // Mark code as verified
     const { error: updateCodeError } = await supabase
       .from("email_verification_codes")
-      .update({ verified_at: new Date().toISOString(), invalidated_at: new Date().toISOString() })
+      .update({ verified_at: new Date().toISOString() })
       .eq("id", verificationCode.id);
 
     if (updateCodeError) {
