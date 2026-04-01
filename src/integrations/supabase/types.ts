@@ -66,11 +66,15 @@ export type Database = {
         Row: {
           author_id: string
           blog_images: string[] | null
+          canonical_url: string | null
           content: string
           cover_image_url: string | null
           created_at: string
           excerpt: string | null
+          faqs: Json | null
           id: string
+          meta_description: string | null
+          meta_title: string | null
           published_at: string | null
           slug: string
           status: string
@@ -80,11 +84,15 @@ export type Database = {
         Insert: {
           author_id: string
           blog_images?: string[] | null
+          canonical_url?: string | null
           content: string
           cover_image_url?: string | null
           created_at?: string
           excerpt?: string | null
+          faqs?: Json | null
           id?: string
+          meta_description?: string | null
+          meta_title?: string | null
           published_at?: string | null
           slug: string
           status?: string
@@ -94,11 +102,15 @@ export type Database = {
         Update: {
           author_id?: string
           blog_images?: string[] | null
+          canonical_url?: string | null
           content?: string
           cover_image_url?: string | null
           created_at?: string
           excerpt?: string | null
+          faqs?: Json | null
           id?: string
+          meta_description?: string | null
+          meta_title?: string | null
           published_at?: string | null
           slug?: string
           status?: string
@@ -336,6 +348,67 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string | null
+          currency: string | null
+          due_date: string | null
+          freelancer_id: string
+          id: string
+          invoice_number: string
+          project_id: string | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string | null
+          currency?: string | null
+          due_date?: string | null
+          freelancer_id: string
+          id?: string
+          invoice_number: string
+          project_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string | null
+          currency?: string | null
+          due_date?: string | null
+          freelancer_id?: string
+          id?: string
+          invoice_number?: string
+          project_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "invoices_freelancer_id_fkey"
+            columns: ["freelancer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "user_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           attachments: Json | null
@@ -370,6 +443,206 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string
+          id: string
+          project_id: string
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string
+          id?: string
+          project_id: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string
+          id?: string
+          project_id?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "user_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_activities: {
+        Row: {
+          created_at: string
+          id: string
+          new_status: string
+          old_status: string | null
+          phase: string
+          project_id: string
+          task_name: string
+          timestamp: string
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_status: string
+          old_status?: string | null
+          phase: string
+          project_id: string
+          task_name: string
+          timestamp?: string
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_status?: string
+          old_status?: string | null
+          phase?: string
+          project_id?: string
+          task_name?: string
+          timestamp?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_activities_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "user_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_phases: {
+        Row: {
+          client_approved: boolean | null
+          created_at: string
+          freelancer_approved: boolean | null
+          id: string
+          locked_at: string | null
+          locked_by: string | null
+          phase_name: string
+          phase_order: number
+          project_id: string
+          rejection_feedback: string | null
+          status: string
+          submission_attachments: Json | null
+          submission_message: string | null
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_approved?: boolean | null
+          created_at?: string
+          freelancer_approved?: boolean | null
+          id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          phase_name: string
+          phase_order: number
+          project_id: string
+          rejection_feedback?: string | null
+          status: string
+          submission_attachments?: Json | null
+          submission_message?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_approved?: boolean | null
+          created_at?: string
+          freelancer_approved?: boolean | null
+          id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          phase_name?: string
+          phase_order?: number
+          project_id?: string
+          rejection_feedback?: string | null
+          status?: string
+          submission_attachments?: Json | null
+          submission_message?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_phases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "user_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          assignee: string
+          created_at: string
+          deadline: string
+          description: string | null
+          id: string
+          phase: string
+          priority: string
+          project_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee: string
+          created_at?: string
+          deadline: string
+          description?: string | null
+          id?: string
+          phase: string
+          priority: string
+          project_id: string
+          status: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee?: string
+          created_at?: string
+          deadline?: string
+          description?: string | null
+          id?: string
+          phase?: string
+          priority?: string
+          project_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "user_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -515,6 +788,7 @@ export type Database = {
           client_feedback: string | null
           community_college_id: string | null
           completed_at: string | null
+          completion_data: Json | null
           cover_image_url: string | null
           created_at: string
           description: string
@@ -540,6 +814,7 @@ export type Database = {
           client_feedback?: string | null
           community_college_id?: string | null
           completed_at?: string | null
+          completion_data?: Json | null
           cover_image_url?: string | null
           created_at?: string
           description: string
@@ -565,6 +840,7 @@ export type Database = {
           client_feedback?: string | null
           community_college_id?: string | null
           completed_at?: string | null
+          completion_data?: Json | null
           cover_image_url?: string | null
           created_at?: string
           description?: string
@@ -633,6 +909,93 @@ export type Database = {
         }
         Relationships: []
       }
+      user_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number | null
+          last_activity_date: string | null
+          longest_streak: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number | null
+          last_activity_date?: string | null
+          longest_streak?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number | null
+          last_activity_date?: string | null
+          longest_streak?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_todos: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          id: string
+          priority: string
+          text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          priority: string
+          text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          priority?: string
+          text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_weekly_plans: {
+        Row: {
+          created_at: string
+          date: string
+          focus: string | null
+          id: string
+          tasks: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          focus?: string | null
+          id?: string
+          tasks?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          focus?: string | null
+          id?: string
+          tasks?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -662,6 +1025,10 @@ export type Database = {
       has_sufficient_credits: {
         Args: { _required_credits?: number; _user_id: string }
         Returns: boolean
+      }
+      submit_project_completion: {
+        Args: { p_attachments: Json; p_message: string; p_project_id: string }
+        Returns: undefined
       }
       user_has_bid_on_project: {
         Args: { _project_id: string; _user_id: string }
